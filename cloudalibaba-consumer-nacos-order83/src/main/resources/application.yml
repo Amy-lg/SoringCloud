@@ -1,0 +1,15 @@
+server:
+  port: 83
+spring:
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+# 消费者将要去访问的微服务名称(nacos微服务提供者名称)
+service-url:
+  nacos-user-service: http://nacos-provider-payment
+
+# 激活Sentinel对Openfeign的支持
+feign:
+  sentinel:
+    enabled: true

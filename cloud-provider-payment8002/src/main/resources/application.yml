@@ -1,0 +1,27 @@
+server:
+  port: 8002
+
+# 配置applicationName & druid-mysql5 driver
+spring:
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    driver-class-name: com.mysql.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/db2024?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&useSSL=false
+    username: root
+    password: 123456
+  # 多环境配置加载内容dev/prod,不写就是默认的default配置
+  profiles:
+    active: dev
+  # Consul setting
+  cloud:
+    consul:
+      host: localhost
+      port: 8500
+      discovery:
+        service-name: ${spring.application.name}
+# 配置mybatis
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.power.cloud.entities
+  configuration:
+    map-underscore-to-camel-case: true

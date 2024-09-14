@@ -1,0 +1,122 @@
+server:
+  port: 80
+spring:
+  application:
+    name: cloud-consumer-openfeign-order
+  cloud:
+    consul:
+      host: localhost
+      port: 8500
+      discovery:
+        service-name: ${spring.application.name}
+        prefer-ip-address: true # 优先使用服务IP进行注册
+    openfeign:
+      client:
+      httpclient:
+        connection-timeout: 20000
+        ok-http:
+          read-timeout: 20000
+        hc5: # 用Apache HttpClient5替换OpenFeign默认的HttpURLConnection性能更好
+          enabled: true
+      compression: # 开启GZIP压缩功能
+        request:
+          enabled: true
+          mime-types: text/xml,application/xml,application/json
+          min-request-size: 2048
+        response:
+          enabled: true
+      circuitbreaker: # 开启circuitbreaker和分组激活
+        enabled: true
+#        group:  # 在测试隔离功能时关闭了分组配置
+#          enabled: true # 没开分组永远不用分组的配置。精确优先、分组次之(开了分组前提)、默认最后
+logging: # 开启Feign日志功能
+  level:
+    com:
+      power:
+        cloud:
+          config:
+            com.power.cloud.config.FeignConfig: debug
+## resilience4j CircuitBreaker断路器 按照次数的配置信息
+#resilience4j:
+#  circuitbreaker:
+#    configs:
+#      default:
+#        failure-rate-threshold: 50 #设置50%的调用失败时打开断路器，超过失败请求百分比circuitbreaker变为OPEN状态
+#        sliding-window-type: count_based #滑动窗口类型
+#        sliding-window-size: 6 #滑动窗口的大小，配置count_based表示6个请求；配置time_based表示6s
+#        minimum-number-of-calls: 6 #断路器计算失败率或慢调用率之前所需的最小样本（每个滑动窗口的周期）。如果此属性为10，则必须最少记录10个样本，然后才能计算失败率。如果只记录了9此调用，即使9此调用都失败，断路器也不会开启
+#        automatic-transition-from-open-to-half-open-enabled: true #是否启用自动从开启状态过度到半开状态。默认值为true，如果启用，CircuitBreaker将自动从开启状态过渡到半开状态，并允许一些请求通过以测试服务是否恢复正常
+#        wait-duration-in-open-state: 5s #从OPEN到HALF_OPEN状态需要等待的请求时间
+#        permitted-number-of-calls-in-half-open-state: 2 #半开状态允许的最大请求数，默认值为10
+#        record-exceptions:
+#          - java.lang.Exception
+#    instances: #指定分布式模块cloud-payment-service使用上面所配置内容
+#      cloud-payment-service:
+#        base-config: default
+
+## resilience4j CircuitBreaker断路器 按照时间的配置信息
+#resilience4j:
+#  timelimiter:
+#    configs:
+#      default:
+#        timeout-duration: 10s #神坑位置！timelimiter默认限制远程1s，超于1s就会抛异常
+#  circuitbreaker:
+#    configs:
+#      default:
+#        failure-rate-threshold: 50 #设置50%的调用失败时打开断路器，超过设置的百分比变为OPEN状态
+#        slow-call-duration-threshold: 2s #慢调用时间阈值，高于这个阈值的视为慢调用并增加慢调用比例
+#        slow-call-rate-threshold: 30 #慢调用百分比峰值，断路器把调用时间大于slow-call-duration-threshold，视为慢调用
+#        sliding-window-type: time_based #滑动窗口类型
+#        sliding-window-size: 2 #滑动窗口大小配置，配置time_based表示2s
+#        minimum-number-of-calls: 2 #断路器计算失败率或慢调用率之前所需的最小样本
+#        permitted-number-of-calls-in-half-open-state: 2 #半开状态允许最大请求数，默认为10
+#        wait-duration-in-open-state: 5s #从OPEN到HALF_OPEN状态需要等待的时间
+#        record-exceptions:
+#          - java.lang.Exception
+#    instances:
+#      cloud-payment-service:
+#        base-config: default
+
+## resilience4j bulkhead信号量舱壁的配置信息
+#resilience4j:
+#  bulkhead:
+#    configs:
+#      default:
+#        max-concurrent-calls: 2 # 隔离允许并发线程执行的最大数量
+#        max-wait-duration: 1s # 当达到并发调用数量时，新的线程最多等待的时间。只配置1s，过时不候进入舱壁fallback方法
+#    instances:
+#      cloud-payment-service:
+#        base-config: default
+#  timelimiter:
+#    configs:
+#      default:
+#        timeout-duration: 20s
+
+## resilience4j bulkhead线程池舱壁的配置信息
+#resilience4j:
+#  timelimiter:
+#    configs:
+#      default:
+#        timeout-duration: 10s
+#  thread-pool-bulkhead:
+#    configs:
+#      default:
+#        core-thread-pool-size: 1
+#        max-thread-pool-size: 1
+#        queue-capacity: 1
+#    instances:
+#      cloud-payment-service:
+#        base-config: default
+## 注：spring.cloud.openfeign.circuitbreaker.group.enable 需要设置为false，新启线程和原来主线程脱离
+
+## resilience4j ratelimit隔离配置
+resilience4j:
+  ratelimiter:
+    configs:
+      default:
+        limit-for-period: 2 # 在一次刷新周期内，允许执行的最大请求数
+        limit-refresh-period: 1s # 限流器每隔1s刷新一次，将允许处理的最大请求数量重置为limit-for-period
+        timeout-duration: 1 # 线程等待权限的默认等待时间
+    instances:
+      cloud-payment-service:
+        base-config: default
